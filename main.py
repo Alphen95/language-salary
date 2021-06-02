@@ -1,6 +1,7 @@
-import requests, datetime
+import requests, datetime, os
 from pprint import pprint
 from terminaltables import AsciiTable
+from dotenv import load_dotenv
 java = {"hh":[0,0],"sj":[0,0]}
 javascript = {"hh":[0,0],"sj":[0,0]}
 ruby = {"hh":[0,0],"sj":[0,0]} 
@@ -8,9 +9,11 @@ c = {"hh":[0,0],"sj":[0,0]}
 py = {"hh":[0,0],"sj":[0,0]} 
 go = {"hh":[0,0],"sj":[0,0]}
 languages = ["Python","Java","C","Ruby","Javascript","Go"]
+load_dotenv(".env")
 superjob_header = {
-    "X-Api-App-Id":"v3.r.134393368.365b3beb5013c1ab2d4d7e9e1e0808cec6c655df.4bf372ba86e1dc70c61ed378319c0dc9857ed6d9"
+    "X-Api-App-Id":os.getenv("SUPERJOB_KEY")
 }
+
 
 def predict_salary(min_salary,max_salary):
     if min_salary == None:
