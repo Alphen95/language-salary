@@ -4,7 +4,29 @@ import requests
 import os
 from terminaltables import SingleTable
 from dotenv import load_dotenv
+jobs = []
+salaries = {
+    'Java': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
+    'Javascript': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
+    'Ruby': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
+    'C': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
+    'Python': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
+    'Go': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
+    }
 
+programmer_job_id = None
+languages = [
+    'Python',
+    'Java',
+    'C',
+    'Ruby',
+    'Javascript',
+    'Go',
+    ]
+
+
+superjob_header = \
+    {'X-Api-App-Id': 'v3.r.134393368.365b3beb5013c1ab2d4d7e9e1e0808cec6c655df.4bf372ba86e1dc70c61ed378319c0dc9857ed6d9'}
 
 def predict_salary(min_salary, max_salary):
     if not min_salary:
@@ -16,27 +38,7 @@ def predict_salary(min_salary, max_salary):
     return predicted_salary
 
 
-def main():
-    jobs = []
-    salaries = {
-        'Java': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
-        'Javascript': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
-        'Ruby': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
-        'C': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
-        'Python': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
-        'Go': {'hh': [0, 0, 0], 'sj': [0, 0, 0]},
-        }
-
-    programmer_job_id = None
-    languages = [
-        'Python',
-        'Java',
-        'C',
-        'Ruby',
-        'Javascript',
-        'Go',
-        ]
-
+def hh_vacancies_get(salaries):
     for language in languages:
         for page in range(0, 20):
             job_params = {
@@ -54,6 +56,8 @@ def main():
             request_items = request.json()['items']
             for job in request_items:
                 jobs.append(job)
+            for language in salaries.items():
+                language[1]['hh'][1] //= (language[1]['hh'][0] if language[1]['hh'][0]> 0 else 1)
     for job in jobs:
         for language in languages:
             if language in job['name']:
@@ -64,9 +68,11 @@ def main():
                       else 0)
                 salaries[language]['hh'][2] += (1 if job['salary'
                         ]['currency'] == 'RUR' else 0)
+    return salaries
+    
+    
 
-    superjob_header = \
-        {'X-Api-App-Id': 'v3.r.134393368.365b3beb5013c1ab2d4d7e9e1e0808cec6c655df.4bf372ba86e1dc70c61ed378319c0dc9857ed6d9'}
+def sj_vacancies_get(salaries):
     jobs = []
     for language in languages:
         for i in range(0, 20):
@@ -84,6 +90,10 @@ def main():
             superjob_vacancies = request.json()['objects']
             for job in superjob_vacancies:
                 jobs.append(job)
+            for language in salaries.items():
+                language[1]['sj'][1] //= (language[1]['sj'
+                                        ][0] if language[1]['sj'][0]
+                                        > 0 else 1)
     for job in jobs:
         for language in languages:
             if language in job['profession']:
@@ -96,28 +106,27 @@ def main():
                                     else None))
                 salaries[language]['sj'][2] += (1 if job['currency']
                         == 'rub' else 0)
-    for language in salaries.items():
-        language[1]['hh'][1] //= (language[1]['hh'
-                                  ][0] if language[1]['hh'][0]
-                                  > 0 else 1)
-        language[1]['sj'][1] //= (language[1]['sj'
-                                  ][0] if language[1]['sj'][0]
-                                  > 0 else 1)
         salaries[language[0]] = language[1]
-    table_data_sj = ["Язык","Вакансий найдено","Вакансий обработано","Средняя зарплата"]
-    for language in salaries.items():
-        table_data_sj.append([language[0], language[1]['sj'][0],
-                             language[1]['sj'][2], language[1]['sj'
-                             ][1]])
-    table_data_hh = ["Язык","Вакансий найдено","Вакансий обработано","Средняя зарплата"]
+    return salaries
+    
+    
+
+def main(salaries):
+    salaries = hh_vacancies_get(salaries)
+    salaries = sj_vacancies_get(salaries)
+    table_data_hh = [["Язык","Вакансий найдено","Вакансий обработано","Средняя зарплата"]]
+    salaries.pop("G")
     for language in salaries.items():
         table_data_hh.append([language[0], language[1]['hh'][0],
                              language[1]['hh'][2], language[1]['hh'
                              ][1]])
-    table_sj = SingleTable(table_data_sj, 'SuperJob Moscow')
     table_hh = SingleTable(table_data_hh, 'HeadHunter Moscow')
-    print(table_sj.table)
     print(table_hh.table)
+    table_data_sj = [["Язык","Вакансий найдено","Вакансий обработано","Средняя зарплата"]]
+    for language in salaries.items():
+        table_data_sj.append([language[0], language[1]['sj'][0], language[1]['sj'][2], language[1]['sj'][1]])
+    
+    table_sj = SingleTable(table_data_sj, 'SuperJob Moscow')
+    print(table_sj.table)
 
-
-main()
+main(salaries)
